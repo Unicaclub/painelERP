@@ -732,3 +732,94 @@ class FiltrosRanking(BaseModel):
     badge_nivel: Optional[str] = None
     tipo_ranking: Optional[str] = "geral"
     limit: int = 20
+
+class TemplateNotificacaoBase(BaseModel):
+    nome: str
+    tipo_notificacao: str
+    canal: str
+    titulo: Optional[str] = None
+    conteudo: str
+    variaveis_disponiveis: Optional[str] = None
+
+class TemplateNotificacaoCreate(TemplateNotificacaoBase):
+    pass
+
+class TemplateNotificacaoUpdate(BaseModel):
+    nome: Optional[str] = None
+    titulo: Optional[str] = None
+    conteudo: Optional[str] = None
+    ativo: Optional[bool] = None
+
+class TemplateNotificacao(TemplateNotificacaoBase):
+    id: int
+    ativo: bool
+    empresa_id: int
+    criado_por_id: int
+    criado_em: datetime
+    atualizado_em: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class NotificacaoEnviadaResponse(BaseModel):
+    id: int
+    tipo_notificacao: str
+    canal: str
+    destinatario: str
+    titulo: Optional[str] = None
+    conteudo: str
+    status: str
+    tentativas: int
+    evento_nome: Optional[str] = None
+    usuario_nome: Optional[str] = None
+    enviada_em: Optional[datetime] = None
+    criada_em: datetime
+    erro_detalhes: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class EnviarNotificacaoManual(BaseModel):
+    template_id: Optional[int] = None
+    tipo_notificacao: str
+    canal: str
+    destinatario: str
+    titulo: Optional[str] = None
+    conteudo: str
+    evento_id: Optional[int] = None
+    agendar_para: Optional[datetime] = None
+
+class FiltrosNotificacoes(BaseModel):
+    tipo_notificacao: Optional[str] = None
+    canal: Optional[str] = None
+    status: Optional[str] = None
+    evento_id: Optional[int] = None
+    data_inicio: Optional[date] = None
+    data_fim: Optional[date] = None
+    destinatario: Optional[str] = None
+    limit: int = 50
+    offset: int = 0
+
+class ConfiguracaoNotificacaoUpdate(BaseModel):
+    n8n_webhook_url: Optional[str] = None
+    n8n_api_key: Optional[str] = None
+    whatsapp_ativo: Optional[bool] = None
+    whatsapp_numero: Optional[str] = None
+    sms_ativo: Optional[bool] = None
+    sms_api_key: Optional[str] = None
+    sms_remetente: Optional[str] = None
+    email_ativo: Optional[bool] = None
+    email_smtp_host: Optional[str] = None
+    email_smtp_port: Optional[int] = None
+    email_usuario: Optional[str] = None
+    email_senha: Optional[str] = None
+    email_remetente: Optional[str] = None
+
+class DashboardNotificacoes(BaseModel):
+    total_enviadas_hoje: int
+    total_pendentes: int
+    total_falhadas: int
+    taxa_sucesso: float
+    notificacoes_recentes: List[NotificacaoEnviadaResponse]
+    tipos_mais_enviados: List[dict]
+    canais_estatisticas: List[dict]

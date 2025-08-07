@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from ..services.notification_service import notification_service
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta

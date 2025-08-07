@@ -566,3 +566,78 @@ export const checkinService = {
   obterDashboard: (eventoId: number): Promise<any> =>
     api.get(`/checkins/dashboard/${eventoId}`),
 };
+
+export const notificacoesService = {
+  async listarTemplates(filtros?: any): Promise<any[]> {
+    const response = await api.get('/notificacoes/templates', { params: filtros });
+    return response.data;
+  },
+
+  async criarTemplate(template: any): Promise<any> {
+    const response = await api.post('/notificacoes/templates', template);
+    return response.data;
+  },
+
+  async atualizarTemplate(id: number, template: any): Promise<any> {
+    const response = await api.put(`/notificacoes/templates/${id}`, template);
+    return response.data;
+  },
+
+  async deletarTemplate(id: number): Promise<any> {
+    const response = await api.delete(`/notificacoes/templates/${id}`);
+    return response.data;
+  },
+
+  async obterHistorico(filtros?: any): Promise<any[]> {
+    const response = await api.get('/notificacoes/historico', { params: filtros });
+    return response.data;
+  },
+
+  async obterDashboard(): Promise<any> {
+    const response = await api.get('/notificacoes/dashboard');
+    return response.data;
+  },
+
+  async enviarManual(dados: any): Promise<any> {
+    const response = await api.post('/notificacoes/enviar-manual', dados);
+    return response.data;
+  },
+
+  async exportarHistorico(formato: 'excel' | 'csv', filtros?: any): Promise<Blob> {
+    const response = await api.get(`/notificacoes/export/${formato}`, {
+      params: filtros,
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  async obterConfiguracoes(): Promise<any> {
+    const response = await api.get('/notificacoes/configuracoes');
+    return response.data;
+  },
+
+  async atualizarConfiguracoes(config: any): Promise<any> {
+    const response = await api.put('/notificacoes/configuracoes', config);
+    return response.data;
+  },
+
+  async obterTiposDisponiveis(): Promise<any[]> {
+    const response = await api.get('/notificacoes/tipos-disponiveis');
+    return response.data;
+  },
+
+  async obterCanaisDisponiveis(): Promise<any[]> {
+    const response = await api.get('/notificacoes/canais-disponiveis');
+    return response.data;
+  },
+
+  async testarCanal(canal: string, destinatario: string): Promise<any> {
+    const response = await api.post(`/notificacoes/testar-canal/${canal}?destinatario=${destinatario}`);
+    return response.data;
+  },
+
+  async obterEstatisticasCanais(periodoDias: number = 30): Promise<any> {
+    const response = await api.get(`/notificacoes/estatisticas-canais?periodo_dias=${periodoDias}`);
+    return response.data;
+  }
+};
