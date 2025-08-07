@@ -249,7 +249,7 @@ async def obter_dashboard_notificacoes(
     canais_stats = db.query(
         NotificacaoEnviada.canal,
         func.count(NotificacaoEnviada.id).label('total'),
-        func.sum(func.case([(NotificacaoEnviada.status == StatusNotificacao.ENVIADA, 1)], else_=0)).label('enviadas')
+        func.count(NotificacaoEnviada.id).filter(NotificacaoEnviada.status == StatusNotificacao.ENVIADA).label('enviadas')
     ).filter(
         func.date(NotificacaoEnviada.criada_em) >= hoje - timedelta(days=7)
     ).group_by(NotificacaoEnviada.canal).all()

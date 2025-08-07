@@ -128,7 +128,17 @@ const NotificacoesModule: React.FC = () => {
   const carregarHistorico = async () => {
     try {
       setLoading(true);
-      const data = await notificacoesService.obterHistorico(filtros);
+      const cleanedFiltros = {
+        ...filtros,
+        data_inicio: filtros.data_inicio || undefined,
+        data_fim: filtros.data_fim || undefined,
+        evento_id: filtros.evento_id || undefined,
+        tipo_notificacao: filtros.tipo_notificacao || undefined,
+        canal: filtros.canal || undefined,
+        status: filtros.status || undefined,
+        destinatario: filtros.destinatario || undefined
+      };
+      const data = await notificacoesService.obterHistorico(cleanedFiltros);
       setHistorico(data);
     } catch (error) {
       toast({
