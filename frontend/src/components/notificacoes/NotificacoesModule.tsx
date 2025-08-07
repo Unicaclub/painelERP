@@ -400,6 +400,16 @@ const NotificacoesModule: React.FC = () => {
                           {getCanalIcon(template.canal)}
                           {template.canal.toUpperCase()}
                         </Badge>
+                        {usuario?.tipo === 'admin' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleTestarCanal(template.canal)}
+                            className="ml-2"
+                          >
+                            Testar
+                          </Button>
+                        )}
                       </div>
                       
                       <p className="text-sm text-gray-600 mb-2">

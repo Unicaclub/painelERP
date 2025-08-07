@@ -12,11 +12,40 @@ def seed_templates_notificacoes():
     db = next(get_db())
     
     empresa = db.query(Empresa).first()
-    admin = db.query(Usuario).filter(Usuario.tipo == "admin").first()
+    admin = db.query(Usuario).filter(Usuario.tipo == "ADMIN").first()
     
-    if not empresa or not admin:
-        print("❌ Empresa ou admin não encontrados. Execute seed_test_data.py primeiro.")
-        return
+    if not empresa:
+        print("❌ Nenhuma empresa encontrada. Criando empresa padrão...")
+        empresa = Empresa(
+            nome="Empresa Teste",
+            cnpj="12345678000195",
+            email="admin@teste.com",
+            telefone="11999999999"
+        )
+        db.add(empresa)
+        db.commit()
+        db.refresh(empresa)
+    
+    if not admin:
+        admin = db.query(Usuario).filter(Usuario.tipo == "ADMIN", Usuario.ativo == True).first()
+        
+        if not admin:
+            print("❌ Nenhum admin encontrado. Criando admin padrão...")
+            admin = Usuario(
+                nome="Admin Notificações",
+                email="admin.notif@teste.com",
+                cpf="98765432100",  # Different CPF to avoid conflicts
+                telefone="11888888888",
+                tipo="ADMIN",
+                empresa_id=empresa.id,
+                senha_hash="$2b$12$dummy_hash",
+                ativo=True
+            )
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+        else:
+            print("✅ Admin existente encontrado, usando para templates.")
     
     templates_padrao = [
         {
