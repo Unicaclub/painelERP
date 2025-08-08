@@ -1,0 +1,209 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: eventos_postgres_prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-eventos_db}
+      POSTGRES_USER: ${POSTGRES_USER:-eventos_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eventos_secure_password_2024}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - eventos_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eventos_user} -d ${POSTGRES_DB:-eventos_db}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: eventos_redis_prod
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_secure_password_2024}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - eventos_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: eventos_backend_prod
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-eventos_user}:${POSTGRES_PASSWORD:-eventos_secure_password_2024}@postgres:5432/${POSTGRES_DB:-eventos_db}
+      
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_password_2024}@redis:6379/0
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-super_secret_key_change_in_production_2024}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-jwt_secret_key_change_in_production_2024}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      
+      # Environment
+      ENVIRONMENT: production
+      DEBUG: false
+      
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://painel.unicaclub.com,https://www.unicaclub.com}
+      
+      # WhatsApp Business API
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL:-https://api.z-api.io}
+      WHATSAPP_INSTANCE_ID: ${WHATSAPP_INSTANCE_ID}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN}
+      WHATSAPP_SENDER: ${WHATSAPP_SENDER:-+5511999999999}
+      
+      # SMS (Twilio)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-+5511999999999}
+      
+      # Email SMTP
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-sistema@unicaclub.com}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-sistema@unicaclub.com}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Sistema de Eventos UnicaClub}
+      
+      # N8N Integration
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      N8N_API_KEY: ${N8N_API_KEY}
+      
+      # CPF Validation API
+      CPF_API_URL: ${CPF_API_URL:-https://www.receitaws.com.br/v1/cnpj}
+      CPF_API_KEY: ${CPF_API_KEY}
+      
+      # File Upload
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: 10485760  # 10MB
+      
+      # Logging
+      LOG_LEVEL: INFO
+      LOG_FILE: /app/logs/eventos.log
+      
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+      - ./backend/backups:/app/backups
+    ports:
+      - "8000:8000"
+    networks:
+      - eventos_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://api.unicaclub.com}
+        VITE_WS_URL: ${VITE_WS_URL:-wss://api.unicaclub.com}
+        VITE_APP_NAME: ${VITE_APP_NAME:-Sistema de Eventos UnicaClub}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-1.0.0}
+    container_name: eventos_frontend_prod
+    ports:
+      - "3000:80"
+    networks:
+      - eventos_network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: eventos_nginx_prod
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - eventos_network
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: eventos_backup_prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-eventos_db}
+      POSTGRES_USER: ${POSTGRES_USER:-eventos_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eventos_secure_password_2024}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}  # Daily at 2 AM
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backend/backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    networks:
+      - eventos_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo '${BACKUP_SCHEDULE:-0 2 * * *} /backup.sh' | crontab - &&
+        crond -f
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  eventos_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
