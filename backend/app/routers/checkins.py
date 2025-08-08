@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from ..services.notification_service import notification_service
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
 from ..database import get_db
@@ -262,7 +264,7 @@ async def dashboard_checkin_tempo_real(
     
     checkins_por_metodo = db.query(
         Checkin.metodo_checkin,
-        db.func.count(Checkin.id).label('total')
+        func.count(Checkin.id).label('total')
     ).filter(Checkin.evento_id == evento_id).group_by(Checkin.metodo_checkin).all()
     
     vendas_sem_checkin = db.query(Transacao).outerjoin(

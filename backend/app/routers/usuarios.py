@@ -75,6 +75,23 @@ async def listar_usuarios(
     usuarios = query.offset(skip).limit(limit).all()
     return usuarios
 
+@router.get("/promoters", response_model=List[UsuarioSchema])
+async def listar_promoters(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(obter_usuario_atual)
+):
+    """Listar promoters"""
+    
+    query = db.query(Usuario).filter(Usuario.tipo == "promoter")
+    
+    if usuario_atual.tipo.value != "admin":
+        query = query.filter(Usuario.empresa_id == usuario_atual.empresa_id)
+    
+    promoters = query.offset(skip).limit(limit).all()
+    return promoters
+
 @router.get("/{usuario_id}", response_model=UsuarioSchema)
 async def obter_usuario(
     usuario_id: int,

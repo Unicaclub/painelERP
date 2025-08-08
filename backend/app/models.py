@@ -536,3 +536,104 @@ class MetricaPromoter(Base):
     
     promoter = relationship("Usuario")
     evento = relationship("Evento")
+
+class TipoNotificacao(enum.Enum):
+    VENDA_CONFIRMADA = "venda_confirmada"
+    CHECKIN_REALIZADO = "checkin_realizado"
+    CAIXA_FECHADO = "caixa_fechado"
+    ALERTA_FINANCEIRO = "alerta_financeiro"
+    ANIVERSARIANTE = "aniversariante"
+    RANKING_ATUALIZADO = "ranking_atualizado"
+    CONQUISTA_DESBLOQUEADA = "conquista_desbloqueada"
+    EVENTO_CRIADO = "evento_criado"
+    LISTA_CRIADA = "lista_criada"
+
+class StatusNotificacao(enum.Enum):
+    PENDENTE = "pendente"
+    ENVIADA = "enviada"
+    FALHADA = "falhada"
+    CANCELADA = "cancelada"
+
+class CanalNotificacao(enum.Enum):
+    WHATSAPP = "whatsapp"
+    SMS = "sms"
+    EMAIL = "email"
+    PUSH = "push"
+
+class TemplateNotificacao(Base):
+    __tablename__ = "templates_notificacoes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(100), nullable=False)
+    tipo_notificacao = Column(Enum(TipoNotificacao), nullable=False)
+    canal = Column(Enum(CanalNotificacao), nullable=False)
+    titulo = Column(String(200))
+    conteudo = Column(Text, nullable=False)
+    variaveis_disponiveis = Column(Text)
+    ativo = Column(Boolean, default=True)
+    
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
+    criado_por_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+    atualizado_em = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    empresa = relationship("Empresa")
+    criado_por = relationship("Usuario")
+
+class NotificacaoEnviada(Base):
+    __tablename__ = "notificacoes_enviadas"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("templates_notificacoes.id"))
+    tipo_notificacao = Column(Enum(TipoNotificacao), nullable=False)
+    canal = Column(Enum(CanalNotificacao), nullable=False)
+    
+    destinatario = Column(String(100), nullable=False)
+    titulo = Column(String(200))
+    conteudo = Column(Text, nullable=False)
+    
+    evento_id = Column(Integer, ForeignKey("eventos.id"))
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    
+    status = Column(Enum(StatusNotificacao), default=StatusNotificacao.PENDENTE)
+    tentativas = Column(Integer, default=0)
+    max_tentativas = Column(Integer, default=3)
+    
+    dados_contexto = Column(Text)
+    resposta_api = Column(Text)
+    erro_detalhes = Column(Text)
+    
+    agendada_para = Column(DateTime(timezone=True))
+    enviada_em = Column(DateTime(timezone=True))
+    criada_em = Column(DateTime(timezone=True), server_default=func.now())
+    
+    template = relationship("TemplateNotificacao")
+    evento = relationship("Evento")
+    usuario = relationship("Usuario")
+
+class ConfiguracaoNotificacao(Base):
+    __tablename__ = "configuracoes_notificacoes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
+    
+    n8n_webhook_url = Column(String(500))
+    n8n_api_key = Column(String(200))
+    
+    whatsapp_ativo = Column(Boolean, default=True)
+    whatsapp_numero = Column(String(20))
+    
+    sms_ativo = Column(Boolean, default=False)
+    sms_api_key = Column(String(200))
+    sms_remetente = Column(String(50))
+    
+    email_ativo = Column(Boolean, default=False)
+    email_smtp_host = Column(String(100))
+    email_smtp_port = Column(Integer)
+    email_usuario = Column(String(100))
+    email_senha = Column(String(200))
+    email_remetente = Column(String(100))
+    
+    atualizado_em = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    empresa = relationship("Empresa")
