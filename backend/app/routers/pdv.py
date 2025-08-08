@@ -19,6 +19,7 @@ from ..schemas import (
 )
 from ..auth import obter_usuario_atual, verificar_permissao_admin
 from ..websocket import notify_stock_update, notify_new_sale, notify_cash_register_update
+from ..services.notification_service import notification_service
 
 router = APIRouter(prefix="/pdv", tags=["PDV"])
 
@@ -362,6 +363,23 @@ async def processar_venda(
             )
     
     background_tasks.add_task(imprimir_comprovante, db_venda.id)
+    
+    background_tasks.add_task(
+        notification_service.processar_evento_sistema,
+        "venda_aprovada",
+        {
+            "evento_id": venda.evento_id,
+            "evento_nome": evento.nome,
+            "cpf_comprador": venda.cpf_comprador,
+            "nome_comprador": venda.nome_comprador,
+            "telefone_comprador": venda.telefone_comprador,
+            "valor": float(venda.valor_final),
+            "lista_nome": "PDV",
+            "data_evento": evento.data_evento.strftime("%d/%m/%Y %H:%M"),
+            "local_evento": evento.local
+        },
+        db
+    )
     
     return db_venda
 
