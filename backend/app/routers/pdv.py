@@ -151,12 +151,14 @@ async def criar_comanda(
     
     qr_code = str(uuid.uuid4())[:8].upper()
     
-    db_comanda = Comanda(
-        **comanda.model_dump(),
-        empresa_id=usuario_atual.empresa_id,
-        qr_code=qr_code,
-        status=StatusComanda.ATIVA
-    )
+    comanda_data = comanda.model_dump()
+    comanda_data.update({
+        'empresa_id': usuario_atual.empresa_id,
+        'qr_code': qr_code,
+        'status': StatusComanda.ATIVA
+    })
+    
+    db_comanda = Comanda(**comanda_data)
     
     db.add(db_comanda)
     db.commit()
