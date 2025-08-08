@@ -14,6 +14,7 @@ import DashboardAvancado from './components/dashboard/DashboardAvancado';
 import ListasModule from './components/listas/ListasModule';
 import CaixaEvento from './components/financeiro/CaixaEvento';
 import RankingModule from './components/ranking/RankingModule';
+import NotificacoesModule from './components/notificacoes/NotificacoesModule';
 import './App.css';
 
 function App() {
@@ -94,6 +95,11 @@ function App() {
                     <Route path="/ranking" element={
                       <ProtectedRoute requiredRoles={['admin', 'promoter']}>
                         <RankingModule />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/notificacoes" element={
+                      <ProtectedRoute requiredRoles={['admin', 'promoter']}>
+                        <NotificacoesModule />
                       </ProtectedRoute>
                     } />
                     <Route path="/relatorios" element={
